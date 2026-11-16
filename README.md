@@ -5,7 +5,7 @@ A `scratch` image containing these Maven Central artifacts in `/jars`:
 | Maven coordinates |
 | --- |
 | `com.fasterxml.jackson.core:jackson-databind:2.21.5` |
-| `org.apache.tomcat.embed:tomcat-embed-core:10.1.59` |
+| `org.apache.tomcat.embed:tomcat-embed-core:11.0.25` |
 | `org.apache.wss4j:wss4j-ws-security-dom:3.0.4` |
 | `org.bouncycastle:bcprov-jdk18on:1.84` |
 | `org.apache.httpcomponents.client5:httpclient5:5.5.2` |
