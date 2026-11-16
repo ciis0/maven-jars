@@ -1,0 +1,69 @@
+name: Publish image
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image
+        shell: bash
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          echo "IMAGE=$image" >> "$GITHUB_ENV"
+          docker build --file Containerfile \
+            --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --tag "$image:latest" \
+            --tag "$image:sha-${GITHUB_SHA}" .
+
+      - name: Verify image contents
+        shell: bash
+        run: |
+          docker image save "$IMAGE:sha-${GITHUB_SHA}" --output "$RUNNER_TEMP/image.tar"
+          python3 - <<'PY'
+          import io
+          import json
+          import os
+          import tarfile
+          import zipfile
+
+          with tarfile.open(os.path.join(os.environ["RUNNER_TEMP"], "image.tar")) as archive:
+              manifest = json.load(archive.extractfile("manifest.json"))
+              layers = manifest[0]["Layers"]
+              assert len(layers) == 1, f"Expected a single scratch image layer: {layers}"
+              layer = archive.extractfile(layers[0]).read()
+          with tarfile.open(fileobj=io.BytesIO(layer)) as image:
+              files = [entry for entry in image.getmembers() if entry.isfile()]
+              assert len(files) == 7, f"Expected 7 JARs, found {len(files)} files"
+              for entry in files:
+                  assert entry.name.startswith("jars/") and entry.name.endswith(".jar"), entry.name
+                  with zipfile.ZipFile(io.BytesIO(image.extractfile(entry).read())) as jar:
+                      assert jar.testzip() is None, f"Corrupt JAR: {entry.name}"
+          PY
+
+      - name: Publish image
+        shell: bash
+        run: |
+          docker push "$IMAGE:sha-${GITHUB_SHA}"
+          docker push "$IMAGE:latest"
