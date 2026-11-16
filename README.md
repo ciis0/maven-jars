@@ -34,10 +34,10 @@ authentication with access to the package.
 
 ## Vulnerability scanning
 
-Every publishing workflow scans the built image with Trivy before pushing it.
+Every publishing workflow scans the built image with Trivy after pushing it.
 The scan checks for known vulnerabilities, including those without a fix, at all
-severity levels. Findings are report-only and do not block publication; scanner
-errors still fail the workflow.
+severity levels. Findings and scanner errors do not block publication; scanner
+errors still fail the workflow so they remain visible.
 
 Download the `trivy-report` artifact from the workflow run for the JSON report.
 The report reflects the vulnerability database available at scan time.
