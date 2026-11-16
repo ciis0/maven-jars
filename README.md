@@ -32,6 +32,16 @@ ghcr.io/ciis0/maven-jars:sha-<full-commit-sha>
 The package is private by default. Pulling it outside Actions requires GHCR
 authentication with access to the package.
 
+## Vulnerability scanning
+
+Every publishing workflow scans the built image with Trivy before pushing it.
+The scan checks for known vulnerabilities, including those without a fix, at all
+severity levels. Findings are report-only and do not block publication; scanner
+errors still fail the workflow.
+
+Download the `trivy-report` artifact from the workflow run for the JSON report.
+The report reflects the vulnerability database available at scan time.
+
 ## Usage
 
 Copy the JARs into another image:
